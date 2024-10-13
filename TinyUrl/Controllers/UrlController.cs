@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TinyUrl.Models;
+using TinyUrl.Controllers.Models;
 
 namespace TinyUrl.Controllers
 {

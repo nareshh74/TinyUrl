@@ -1,4 +1,4 @@
-﻿namespace TinyUrl.Models
+﻿namespace TinyUrl.Controllers.Models
 {
     public class ShortUrlResponse
     {

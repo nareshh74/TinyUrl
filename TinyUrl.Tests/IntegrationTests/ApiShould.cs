@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using Microsoft.AspNetCore.Mvc.Testing;
-using TinyUrl.Models;
+using TinyUrl.Controllers.Models;
 
 namespace TinyUrl.Tests
 {
