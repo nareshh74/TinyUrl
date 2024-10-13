@@ -1,11 +1,24 @@
+using System.Text.Json;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
-
+var services = builder.Services;
+services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen();
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 // Configure the HTTP request pipeline.
 
 app.UseAuthorization();
@@ -13,3 +26,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// to test using web application factory
+public partial class Program { }
