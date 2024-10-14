@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TinyUrl.Controllers.Models;
+using TinyUrl.Logic;
 
 namespace TinyUrl.Controllers
 {
     [Route("api/v1")]
     public class UrlController : ControllerBase
     {
-        private readonly UrlConverter _urlConverter;
+        private readonly IUrlConverter _urlConverter;
 
-        public UrlController(UrlConverter urlConverter)
+        public UrlController(IUrlConverter urlConverter)
         {
             this._urlConverter = urlConverter;
         }

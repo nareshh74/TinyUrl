@@ -1,5 +1,5 @@
 using System.Text.Json;
-using TinyUrl;
+using TinyUrl.Logic;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +13,7 @@ services.AddControllers()
     });
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
-services.AddSingleton<UrlConverter>();
+services.AddSingleton<IUrlConverter, UrlConverter>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

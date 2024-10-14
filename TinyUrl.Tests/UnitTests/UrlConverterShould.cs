@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using TinyUrl.Logic;
 
 namespace TinyUrl.Tests.UnitTests
 {
