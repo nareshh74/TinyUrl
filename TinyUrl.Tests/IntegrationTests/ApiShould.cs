@@ -35,7 +35,10 @@ namespace TinyUrl.Tests
             {
                 AllowAutoRedirect = false  // Disable automatic redirection following
             });
-            var response = await client.GetAsync("api/v1/abc");
+            var content = new StringContent("{\"longUrl\":\"https://www.google.com\"}", Encoding.UTF8, "application/json");
+            var shortenResponse = await client.PostAsync("api/v1/shorten", content);
+            var shortUrlResponse = await shortenResponse.Content.ReadFromJsonAsync<ShortUrlResponse>();
+            var response = await client.GetAsync($"api/v1/{shortUrlResponse?.ShortUrl}");
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
             Assert.Equal("https://www.google.com/", response.Headers?.Location?.ToString());
         }
