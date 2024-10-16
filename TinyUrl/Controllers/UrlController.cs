@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Concurrent;
 using TinyUrl.Controllers.Models;
 using TinyUrl.Logic;
 
@@ -9,38 +8,36 @@ namespace TinyUrl.Controllers
     public class UrlController : ControllerBase
     {
         private readonly IUrlConverter _urlConverter;
-        private readonly ConcurrentDictionary<string, string> _urlToCode = new();
-        private readonly ConcurrentDictionary<string, string> _codeToUrl = new();
+        private readonly IUrlRepository _urlRepository;
 
-        public UrlController(IUrlConverter urlConverter)
+        public UrlController(IUrlConverter urlConverter, IUrlRepository urlRepository)
         {
             this._urlConverter = urlConverter;
+            this._urlRepository = urlRepository;
         }
 
         [HttpPost("shorten")]
-        public IActionResult Shorten([FromBody] LongUrlRequest request)
+        public async Task<IActionResult> Shorten([FromBody] LongUrlRequest request, CancellationToken cancellationToken)
         {
             string code;
-            var urlString = request.LongUrl.ToString();
-            if(this._urlToCode.TryGetValue(urlString, out var cachedCode))
+            if(await this._urlRepository.TryGetCodeAsync(request.LongUrl, out var cachedCode, cancellationToken))
             {
-                code = cachedCode;
+                code = cachedCode!;
             }
             else
             {
                 code = this._urlConverter.Encode(request.LongUrl);
-                this._urlToCode[urlString] = code;
-                this._codeToUrl[code] = urlString;
+                await this._urlRepository.TryAddUrlCodeMappingAsync(request.LongUrl, code, cancellationToken);
             }
             return this.Created("", new ShortUrlResponse { ShortUrl = code });
         }
 
         [HttpGet("{shortUrlHash}")]
-        public IActionResult RedirectToLongUrl(string shortUrlHash)
+        public async Task<IActionResult> RedirectToLongUrl(string shortUrlHash, CancellationToken cancellationToken)
         {
-            if (this._codeToUrl.TryGetValue(shortUrlHash, out var url))
+            if (await this._urlRepository.TryGetUrlAsync(shortUrlHash, out var url, cancellationToken))
             {
-                return this.Redirect(url);
+                return this.Redirect(url.ToString());
             }
             return this.NotFound();
         }

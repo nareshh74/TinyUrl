@@ -29,29 +29,45 @@ namespace TinyUrl.Tests
         }
 
         [Theory]
-        [InlineData("https://www.google.com", "https://www.microsoft.com", false)]
-        [InlineData("https://www.google.com", "https://www.google.com", true)]
-        [InlineData("https://www.google.com", "https://www.google.com/path", false)]
-        [InlineData("https://www.google.com", "https://www.google.com?q=1", false)]
-        public async Task RedirectShortUrl(string url1String, string url2String, bool equalFlag)
+        [InlineData("https://www.google.com/", "https://www.microsoft.com/", false)]
+        [InlineData("https://www.google.com/", "https://www.google.com/", true)]
+        [InlineData("https://www.google.com/", "https://www.google.com/path", false)]
+        [InlineData("https://www.google.com/", "https://www.google.com/?q=1", false)]
+        public async Task RedirectShortUrl(string url1String, string url2String, bool equalFlag, CancellationToken cancellationToken = default)
         {
             var client = this._factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false // Disable automatic redirection following
             });
-            var content1 = new StringContent("{\"longUrl\":\"" + url1String + "\"}", Encoding.UTF8, "application/json");
-            var task1 = client.PostAsync("api/v1/shorten", content1);
-            var content2 = new StringContent("{\"longUrl\":\"" + url2String + "\"}", Encoding.UTF8, "application/json");
-            var task2 = client.PostAsync("api/v1/shorten", content2);
-            var results = await Task.WhenAll(task1, task2);
-            var shortUrlResponse1 = await results[0].Content.ReadFromJsonAsync<ShortUrlResponse>();
-            var shortUrlResponse2 = await results[1].Content.ReadFromJsonAsync<ShortUrlResponse>();
-            var response1 = await client.GetAsync($"api/v1/{shortUrlResponse1?.ShortUrl}");
-            var response2 = await client.GetAsync($"api/v1/{shortUrlResponse2?.ShortUrl}");
-            Assert.Equal(HttpStatusCode.Redirect, response1.StatusCode);
-            Assert.Equal(HttpStatusCode.Redirect, response2.StatusCode);
-            Assert.Equal(url1String == response1.Headers.Location?.ToString(), equalFlag);
-            Assert.Equal(url2String == response2.Headers.Location?.ToString(), equalFlag);
+
+            var shortenTasks = new List<Task<ShortUrlResponse?>>
+            {
+                this.CreateShortUrl(client, url1String, cancellationToken),
+                this.CreateShortUrl(client, url2String, cancellationToken)
+            };
+
+            var shortUrlResponses = await Task.WhenAll<ShortUrlResponse?>(shortenTasks);
+
+            var redirectTasks = shortUrlResponses.Select(shortUrlResponse => client.GetAsync($"api/v1/{shortUrlResponse?.ShortUrl}", cancellationToken)).ToList();
+
+            var redirectResponses = await Task.WhenAll<HttpResponseMessage>(redirectTasks);
+
+            Assert.True(redirectResponses.All(response => response.StatusCode == HttpStatusCode.Redirect));
+
+            Assert.Equal(url1String, redirectResponses[0].Headers.Location?.ToString());
+            Assert.Equal(url2String, redirectResponses[1].Headers.Location?.ToString());
+
+            Assert.Equal(url1String == redirectResponses[1].Headers.Location?.ToString(), equalFlag);
+            Assert.Equal(url2String == redirectResponses[0].Headers.Location?.ToString(), equalFlag);
         }
+
+        private async Task<ShortUrlResponse?> CreateShortUrl(HttpClient client, string longUrl, CancellationToken cancellationToken)
+        {
+            var content = JsonContent.Create(new { longUrl });
+            var response = await client.PostAsync("api/v1/shorten", content, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<ShortUrlResponse>(cancellationToken);
+        }
+
+
     }
 }
