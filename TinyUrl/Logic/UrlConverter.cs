@@ -40,10 +40,5 @@ namespace TinyUrl.Logic
             this._urlToCode[urlString] = urlBase64String;
             return urlBase64String;
         }
-
-        public Uri? Decode(string code)
-        {
-            return this._codeToUrl.ContainsKey(code) ? new Uri(this._codeToUrl[code]) : null;
-        }
     }
 }

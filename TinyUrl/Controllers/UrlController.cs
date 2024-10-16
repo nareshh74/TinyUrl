@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 using TinyUrl.Controllers.Models;
 using TinyUrl.Logic;
 
@@ -8,6 +9,8 @@ namespace TinyUrl.Controllers
     public class UrlController : ControllerBase
     {
         private readonly IUrlConverter _urlConverter;
+        private readonly ConcurrentDictionary<string, string> _urlToCode = new();
+        private readonly ConcurrentDictionary<string, string> _codeToUrl = new();
 
         public UrlController(IUrlConverter urlConverter)
         {
@@ -17,13 +20,29 @@ namespace TinyUrl.Controllers
         [HttpPost("shorten")]
         public IActionResult Shorten([FromBody] LongUrlRequest request)
         {
-            return this.Created("", new ShortUrlResponse { ShortUrl = this._urlConverter.Encode(request.LongUrl) });
+            string code;
+            var urlString = request.LongUrl.ToString();
+            if(this._urlToCode.TryGetValue(urlString, out var cachedCode))
+            {
+                code = cachedCode;
+            }
+            else
+            {
+                code = this._urlConverter.Encode(request.LongUrl);
+                this._urlToCode[urlString] = code;
+                this._codeToUrl[code] = urlString;
+            }
+            return this.Created("", new ShortUrlResponse { ShortUrl = code });
         }
 
         [HttpGet("{shortUrlHash}")]
         public IActionResult RedirectToLongUrl(string shortUrlHash)
         {
-            return this.Redirect(this._urlConverter.Decode(shortUrlHash).ToString());
+            if (this._codeToUrl.TryGetValue(shortUrlHash, out var url))
+            {
+                return this.Redirect(url);
+            }
+            return this.NotFound();
         }
     }
 }
