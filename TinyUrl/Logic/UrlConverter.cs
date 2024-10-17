@@ -9,19 +9,11 @@ namespace TinyUrl.Logic
     /// </summary>
     public class UrlConverter : IUrlConverter
     {
-        private readonly ConcurrentDictionary<string, string> _urlToCode = new();
-        private readonly ConcurrentDictionary<string, string> _codeToUrl = new();
         private readonly object _lockObject = 0;
         private int _counter = 0;
 
         public string Encode(Uri url)
         {
-            var urlString = url.ToString();
-            if (this._urlToCode.ContainsKey(urlString))
-            {
-                return this._urlToCode[urlString];
-            }
-
             byte[] urlBytes;
 
             lock (this._lockObject)
@@ -36,8 +28,6 @@ namespace TinyUrl.Logic
                 urlBase64String = urlBase64String[..8];
             }
 
-            this._codeToUrl[urlBase64String] = urlString;
-            this._urlToCode[urlString] = urlBase64String;
             return urlBase64String;
         }
     }
