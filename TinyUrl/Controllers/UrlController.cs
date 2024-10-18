@@ -8,22 +8,32 @@ namespace TinyUrl.Controllers
     public class UrlController : ControllerBase
     {
         private readonly IUrlConverter _urlConverter;
+        private readonly IUrlRepository _urlRepository;
 
-        public UrlController(IUrlConverter urlConverter)
+        public UrlController(IUrlConverter urlConverter, IUrlRepository urlRepository)
         {
             this._urlConverter = urlConverter;
+            this._urlRepository = urlRepository;
         }
 
         [HttpPost("shorten")]
-        public IActionResult Shorten([FromBody] LongUrlRequest request)
+        public async Task<IActionResult> Shorten([FromBody] LongUrlRequest request, CancellationToken cancellationToken)
         {
-            return this.Created("", new ShortUrlResponse { ShortUrl = this._urlConverter.Encode(request.LongUrl) });
+            int id = await this._urlRepository.GenerateIdAsync(request.LongUrl, cancellationToken);
+            string code = this._urlConverter.Encode(request.LongUrl, id);
+            await this._urlRepository.TryUpdateCodeAsync(id, code, cancellationToken);
+            return this.Created("", new ShortUrlResponse { ShortUrl = code });
         }
 
         [HttpGet("{shortUrlHash}")]
-        public IActionResult RedirectToLongUrl(string shortUrlHash)
+        public async Task<IActionResult> RedirectToLongUrl(string shortUrlHash, CancellationToken cancellationToken)
         {
-            return this.Redirect(this._urlConverter.Decode(shortUrlHash).ToString());
+            var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
+            if (url != null)
+            {
+                return this.Redirect(url.ToString());
+            }
+            return this.NotFound();
         }
     }
 }

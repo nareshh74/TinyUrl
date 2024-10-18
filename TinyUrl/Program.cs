@@ -1,11 +1,14 @@
 using System.Text.Json;
+using TinyUrl;
 using TinyUrl.Logic;
+using TinyUrl.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 var services = builder.Services;
+services.AddSingleton<IUrlRepository, InMemoryRepository>();
 services.AddControllers()
     .AddJsonOptions(options =>
     {
