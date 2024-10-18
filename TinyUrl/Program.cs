@@ -1,6 +1,7 @@
 using System.Text.Json;
 using TinyUrl;
 using TinyUrl.Logic;
+using TinyUrl.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
