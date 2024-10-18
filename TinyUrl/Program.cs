@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 var services = builder.Services;
-services.AddSingleton<IUrlRepository, UrlRepository>();
+services.AddSingleton<IUrlRepository, InMemoryRepository>();
 services.AddControllers()
     .AddJsonOptions(options =>
     {

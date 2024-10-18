@@ -1,6 +1,6 @@
 ﻿namespace TinyUrl.Repository
 {
-    public sealed class UrlRepository : IUrlRepository
+    public sealed class InMemoryRepository : IUrlRepository
     {
         private readonly Dictionary<string, string> _urlToCode = new();
         private readonly Dictionary<string, string> _codeToUrl = new();
