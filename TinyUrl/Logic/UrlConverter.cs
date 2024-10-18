@@ -9,18 +9,9 @@ namespace TinyUrl.Logic
     /// </summary>
     public class UrlConverter : IUrlConverter
     {
-        private readonly object _lockObject = 0;
-        private int _counter = 0;
-
-        public string Encode(Uri url)
+        public string Encode(Uri url, int seed)
         {
-            byte[] urlBytes;
-
-            lock (this._lockObject)
-            {
-                this._counter++;
-                urlBytes = Encoding.UTF8.GetBytes(this._counter.ToString());
-            }
+            byte[] urlBytes = Encoding.UTF8.GetBytes(seed.ToString());
 
             var urlBase64String = Convert.ToBase64String(urlBytes);
             if (urlBase64String.Length > 8)

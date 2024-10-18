@@ -2,5 +2,5 @@
 
 public interface IUrlConverter
 {
-    string Encode(Uri url);
+    string Encode(Uri url, int seed);
 }

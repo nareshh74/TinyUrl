@@ -19,23 +19,17 @@ namespace TinyUrl.Controllers
         [HttpPost("shorten")]
         public async Task<IActionResult> Shorten([FromBody] LongUrlRequest request, CancellationToken cancellationToken)
         {
-            string code;
-            if(await this._urlRepository.TryGetCodeAsync(request.LongUrl, out var cachedCode, cancellationToken))
-            {
-                code = cachedCode!;
-            }
-            else
-            {
-                code = this._urlConverter.Encode(request.LongUrl);
-                await this._urlRepository.TryAddUrlCodeMappingAsync(request.LongUrl, code, cancellationToken);
-            }
+            int id = await this._urlRepository.GenerateIdAsync(request.LongUrl, cancellationToken);
+            string code = this._urlConverter.Encode(request.LongUrl, id);
+            await this._urlRepository.TryUpdateCodeAsync(id, code, cancellationToken);
             return this.Created("", new ShortUrlResponse { ShortUrl = code });
         }
 
         [HttpGet("{shortUrlHash}")]
         public async Task<IActionResult> RedirectToLongUrl(string shortUrlHash, CancellationToken cancellationToken)
         {
-            if (await this._urlRepository.TryGetUrlAsync(shortUrlHash, out var url, cancellationToken))
+            var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
+            if (url != null)
             {
                 return this.Redirect(url.ToString());
             }

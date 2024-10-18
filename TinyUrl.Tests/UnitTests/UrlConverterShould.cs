@@ -9,7 +9,7 @@ namespace TinyUrl.Tests.UnitTests
         {
             var urlConverter = new UrlConverter();
             var url = new Uri("https://www.google.com");
-            var code = urlConverter.Encode(url);
+            var code = urlConverter.Encode(url, 0);
             Assert.True(code.Length <= 8);
         }
     }
