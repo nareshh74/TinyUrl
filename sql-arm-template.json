@@ -1,0 +1,81 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for the SQL Server"
+      },
+      "defaultValue": "centralindia"
+    },
+    "serverName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the SQL server."
+      }
+    },
+    "adminLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "Administrator username for the SQL server."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Administrator password for the SQL server."
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the SQL database."
+      }
+    },
+    "pricingTier": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": ["Basic", "Standard", "Premium"],
+      "metadata": {
+        "description": "Pricing tier of the SQL database."
+      }
+    },
+    "maxSizeBytes": {
+      "type": "string",
+      "defaultValue": "10737418240",  // 10 GB
+      "metadata": {
+        "description": "Maximum database size in bytes."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2021-02-01-preview",
+      "name": "[parameters('serverName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('adminLogin')]",
+        "administratorLoginPassword": "[parameters('adminPassword')]"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2021-02-01-preview",
+      "name": "[concat(parameters('serverName'), '/', parameters('databaseName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": "[parameters('maxSizeBytes')]",
+        "edition": "[parameters('pricingTier')]"
+      }
+    }
+  ],
+  "outputs": {
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('serverName'))).fullyQualifiedDomainName]"
+    }
+  }
+}

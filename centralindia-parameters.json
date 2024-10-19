@@ -1,0 +1,23 @@
+{
+  "location": {
+    "value": "centralindia"
+  },
+  "serverName": {
+    "value": "centralsqlserver"
+  },
+  "adminLogin": {
+    "value": "admincentral"
+  },
+  "adminPassword": {
+    "value": ""
+  },
+  "databaseName": {
+    "value": "CentralIndiaDatabase"
+  },
+  "pricingTier": {
+    "value": "Standard"
+  },
+  "maxSizeBytes": {
+    "value": "10737418240" // 10 GB
+  }
+}
