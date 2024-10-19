@@ -1,9 +1,0 @@
-#!!!NOT MAINTAINED!!!
-
-
-@TinyUrl_HostAddress = http://localhost:5091
-
-GET {{TinyUrl_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

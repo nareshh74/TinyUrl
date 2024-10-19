@@ -65,6 +65,7 @@ namespace TinyUrl.Tests
         {
             var content = JsonContent.Create(new { longUrl });
             var response = await client.PostAsync("api/v1/shorten", content, cancellationToken);
+            response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<ShortUrlResponse>(cancellationToken);
         }
 

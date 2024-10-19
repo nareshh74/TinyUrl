@@ -1,22 +1,16 @@
-using System.Text.Json;
-using TinyUrl;
+using TinyUrl.Controllers;
 using TinyUrl.Logic;
 using TinyUrl.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
 
 // Add services to the container.
 
 var services = builder.Services;
-services.AddSingleton<IUrlRepository, InMemoryRepository>();
-services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    });
-services.AddEndpointsApiExplorer();
-services.AddSwaggerGen();
-services.AddSingleton<IUrlConverter, UrlConverter>();
+services.AddDataDependencies(configuration);
+services.AddApiDependencies();
+services.AddBusinessLogicDependencies();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

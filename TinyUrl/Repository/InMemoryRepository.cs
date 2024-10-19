@@ -3,6 +3,7 @@ using Microsoft.VisualBasic.CompilerServices;
 
 namespace TinyUrl.Repository
 {
+    // not used after introducing SqlRepository
     public sealed class InMemoryRepository : IUrlRepository
     {
         private readonly ConcurrentDictionary<int, string> _idToUrl= new();
