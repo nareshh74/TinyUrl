@@ -1,9 +1,7 @@
 name: Provision SQL Database and Apply EF Core Migrations
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # This enables the manual trigger for the workflow
 
 jobs:
   deploy:
