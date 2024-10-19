@@ -1,0 +1,36 @@
+name: Provision SQL Database and Apply EF Core Migrations
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Step 1: Set up Azure CLI
+    - name: Set up Azure CLI
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # Step 2: Deploy SQL Server and Database to Central India
+    - name: Deploy SQL Server and Database to Central India
+      run: |
+        az deployment group create --resource-group MyResourceGroupCentralIndia \
+          --template-file sql-arm-template.json \
+          --parameters centralindia-parameters.json
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # Step 3: Apply EF Core Migrations to Central India Database
+    - name: Apply EF Core Migrations to Central India Database
+      run: |
+        dotnet ef database update --connection "Server=tcp:centralsqlserver.database.windows.net,1433;Database=CentralIndiaDatabase;User Id=admincentral;Password=${{ secrets.AZURE_SQL_ADMIN_PASSWORD }};"
+      env:
+        AZURE_SQL_ADMIN_PASSWORD: ${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}
