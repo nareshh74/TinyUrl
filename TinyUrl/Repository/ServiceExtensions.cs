@@ -12,6 +12,7 @@ namespace TinyUrl.Repository
             });
 
             services.AddScoped<IUrlRepository, SqlRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
         }
     }
 }
