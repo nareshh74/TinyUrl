@@ -19,9 +19,9 @@ export default function () {
         headers: { 'Content-Type': 'application/json' },
     });
 
-    // Check if the shorten URL API returns a 200 status code and has a shortUrl in the response
+    // Check if the shorten URL API returns a 201 status code and has a shortUrl in the response
     check(shortenResponse, {
-        'status was 200': (r) => r.status === 200,
+        'status was 201': (r) => r.status === 201,
         'shortUrl exists': (r) => JSON.parse(r.body).shortUrl !== undefined,
     });
 
