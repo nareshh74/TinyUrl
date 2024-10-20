@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using TinyUrl.Controllers.Models;
 using TinyUrl.Logic;
 using TinyUrl.Repository;
@@ -11,12 +12,14 @@ namespace TinyUrl.Controllers
         private readonly IUrlConverter _urlConverter;
         private readonly IUrlRepository _urlRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IDistributedCache _cache;
 
-        public UrlController(IUrlConverter urlConverter, IUrlRepository urlRepository, IUnitOfWork unitOfWork)
+        public UrlController(IUrlConverter urlConverter, IUrlRepository urlRepository, IUnitOfWork unitOfWork, IDistributedCache cache)
         {
             this._urlConverter = urlConverter;
             this._urlRepository = urlRepository;
             this._unitOfWork = unitOfWork;
+            this._cache = cache;
         }
 
         [HttpPost("shorten")]
@@ -29,6 +32,7 @@ namespace TinyUrl.Controllers
                 string code = this._urlConverter.Encode(request.LongUrl, id);
                 await this._urlRepository.TryUpdateCodeAsync(id, code, cancellationToken);
                 await this._unitOfWork.CommitAsync(cancellationToken);
+                await this._cache.SetStringAsync(code, request.LongUrl.ToString(), new DistributedCacheEntryOptions(), cancellationToken);
                 return this.Created("", new ShortUrlResponse { ShortUrl = code });
             }
             catch (Exception)
@@ -41,12 +45,20 @@ namespace TinyUrl.Controllers
         [HttpGet("{shortUrlHash}")]
         public async Task<IActionResult> RedirectToLongUrl(string shortUrlHash, CancellationToken cancellationToken)
         {
-            var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
-            if (url != null)
+            var urlString = await this._cache.GetStringAsync(shortUrlHash, cancellationToken);
+            if (!string.IsNullOrEmpty(urlString))
             {
-                return this.Redirect(url.ToString());
+                return this.Redirect(urlString);
             }
-            return this.NotFound();
+
+            var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
+            urlString = url?.ToString();
+            if (string.IsNullOrEmpty(urlString))
+            {
+                return this.NotFound();
+            }
+            await this._cache.SetStringAsync(shortUrlHash, urlString, new DistributedCacheEntryOptions(), cancellationToken);
+            return this.Redirect(urlString);
         }
     }
 }

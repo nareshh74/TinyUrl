@@ -8,11 +8,15 @@ namespace TinyUrl.Repository
         {
             services.AddDbContext<ApplicationDbContext>(options =>
             {
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                options.UseSqlServer(configuration["ConnectionStrings:Sql"]);
             });
 
             services.AddScoped<IUrlRepository, SqlRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration["ConnectionStrings:Redis"];
+            });
         }
     }
 }
