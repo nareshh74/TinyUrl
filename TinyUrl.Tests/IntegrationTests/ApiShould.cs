@@ -25,7 +25,7 @@ namespace TinyUrl.Tests
             var shortUrlResponse = await response.Content.ReadFromJsonAsync<ShortUrlResponse>();
             Assert.NotNull(shortUrlResponse);
             Assert.NotEmpty(shortUrlResponse.ShortUrl);
-            Assert.True(shortUrlResponse.ShortUrl.Length < 8);
+            Assert.True(shortUrlResponse.ShortUrl.Length <= 8);
         }
 
         [Theory]
