@@ -13,6 +13,7 @@ namespace TinyUrl.Repository
 
         public async Task<int> GenerateIdAsync(Uri url, CancellationToken cancellationToken)
         {
+
             var urlMappings = new UrlMappings { Url = url.ToString() };
             this._dbContext.Urls.Add(urlMappings);
             await this._dbContext.SaveChangesAsync(cancellationToken);
