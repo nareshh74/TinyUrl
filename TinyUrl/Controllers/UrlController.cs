@@ -39,7 +39,7 @@ namespace TinyUrl.Controllers
                 string code = this._urlConverter.Encode(request.LongUrl, id);
                 await this._urlRepository.TryUpdateCodeAsync(id, code, cancellationToken);
                 await this._unitOfWork.CommitAsync(cancellationToken);
-                this.WriteToCache(request, cancellationToken, code);
+                this.WriteToCache(request.LongUrl.ToString(), cancellationToken, code);
                 return this.Created("", new ShortUrlResponse { ShortUrl = code });
             }
             catch (Exception)
@@ -49,13 +49,13 @@ namespace TinyUrl.Controllers
             }
         }
 
-        private void WriteToCache(LongUrlRequest request, CancellationToken cancellationToken, string code)
+        private void WriteToCache(string longUrl, CancellationToken cancellationToken, string code)
         {
             Task.Run
             (
                 async () =>
                 {
-                    var data = MessagePackSerializer.Serialize(request.LongUrl);
+                    var data = MessagePackSerializer.Serialize(longUrl);
                     await this._cache.SetAsync(code, data, new DistributedCacheEntryOptions(), cancellationToken);
                 }
                 , cancellationToken
@@ -69,9 +69,9 @@ namespace TinyUrl.Controllers
             if (data?.Length > 0)
             {
                 using var stream = new MemoryStream(data);
-                var cachedUrl = await MessagePackSerializer.DeserializeAsync<Uri>(stream, options:null, cancellationToken);
+                var cachedUrl = await MessagePackSerializer.DeserializeAsync<string>(stream, options:null, cancellationToken);
                 this._logger.LogInformation("Cache hit for {shortUrlHash}", shortUrlHash);
-                return this.Redirect(cachedUrl.ToString());
+                return this.Redirect(cachedUrl);
             }
             this._logger.LogInformation("Cache miss for {shortUrlHash}", shortUrlHash);
             var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
@@ -80,7 +80,7 @@ namespace TinyUrl.Controllers
             {
                 return this.NotFound();
             }
-            this.WriteToCache(new LongUrlRequest { LongUrl = url! }, cancellationToken, shortUrlHash);
+            this.WriteToCache(urlString, cancellationToken, shortUrlHash);
             return this.Redirect(urlString);
         }
     }
