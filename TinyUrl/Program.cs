@@ -13,7 +13,6 @@ try
         .Enrich.FromLogContext()
         .WriteTo.File("logs.txt")
         .CreateLogger();
-    
 
     // Add services to the container.
 
@@ -29,7 +28,6 @@ try
         app.UseSwagger();
         app.UseSwaggerUI();
     }
-    // Configure the HTTP request pipeline.
 
     app.UseSerilogRequestLogging();
     app.UseAuthorization();
