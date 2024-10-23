@@ -38,7 +38,7 @@ namespace TinyUrl.Controllers
                 string code = this._urlConverter.Encode(request.LongUrl, id);
                 await this._urlRepository.TryUpdateCodeAsync(id, code, cancellationToken);
                 await this._unitOfWork.CommitAsync(cancellationToken);
-                await this._cache.SetStringAsync(code, request.LongUrl.ToString(), new DistributedCacheEntryOptions(), cancellationToken);
+                this.WriteToCache(request, cancellationToken, code);
                 return this.Created("", new ShortUrlResponse { ShortUrl = code });
             }
             catch (Exception)
@@ -46,6 +46,18 @@ namespace TinyUrl.Controllers
                 await this._unitOfWork.RollbackAsync(cancellationToken);
                 throw;
             }
+        }
+
+        private void WriteToCache(LongUrlRequest request, CancellationToken cancellationToken, string code)
+        {
+            Task.Run
+            (
+                async () =>
+                {
+                    await this._cache.SetStringAsync(code, request.LongUrl.ToString(), new DistributedCacheEntryOptions(), cancellationToken);
+                }
+                , cancellationToken
+            );
         }
 
         [HttpGet("{shortUrlHash}")]
