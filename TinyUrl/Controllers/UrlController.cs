@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MessagePack;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using TinyUrl.Controllers.Models;
 using TinyUrl.Logic;
@@ -54,7 +55,8 @@ namespace TinyUrl.Controllers
             (
                 async () =>
                 {
-                    await this._cache.SetStringAsync(code, request.LongUrl.ToString(), new DistributedCacheEntryOptions(), cancellationToken);
+                    var data = MessagePackSerializer.Serialize(request.LongUrl);
+                    await this._cache.SetAsync(code, data, new DistributedCacheEntryOptions(), cancellationToken);
                 }
                 , cancellationToken
             );
@@ -63,20 +65,22 @@ namespace TinyUrl.Controllers
         [HttpGet("{shortUrlHash}")]
         public async Task<IActionResult> RedirectToLongUrl(string shortUrlHash, CancellationToken cancellationToken)
         {
-            var urlString = await this._cache.GetStringAsync(shortUrlHash, cancellationToken);
-            if (!string.IsNullOrEmpty(urlString))
+            var data = await this._cache.GetAsync(shortUrlHash, cancellationToken);
+            if (data?.Length > 0)
             {
+                using var stream = new MemoryStream(data);
+                var cachedUrl = await MessagePackSerializer.DeserializeAsync<Uri>(stream, options:null, cancellationToken);
                 this._logger.LogInformation("Cache hit for {shortUrlHash}", shortUrlHash);
-                return this.Redirect(urlString);
+                return this.Redirect(cachedUrl.ToString());
             }
             this._logger.LogInformation("Cache miss for {shortUrlHash}", shortUrlHash);
             var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
-            urlString = url?.ToString();
+            var urlString = url?.ToString();
             if (string.IsNullOrEmpty(urlString))
             {
                 return this.NotFound();
             }
-            await this._cache.SetStringAsync(shortUrlHash, urlString, new DistributedCacheEntryOptions(), cancellationToken);
+            this.WriteToCache(new LongUrlRequest { LongUrl = url! }, cancellationToken, shortUrlHash);
             return this.Redirect(urlString);
         }
     }
