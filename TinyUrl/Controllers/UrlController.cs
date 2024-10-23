@@ -13,13 +13,19 @@ namespace TinyUrl.Controllers
         private readonly IUrlRepository _urlRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IDistributedCache _cache;
+        private readonly ILogger<UrlController> _logger;
 
-        public UrlController(IUrlConverter urlConverter, IUrlRepository urlRepository, IUnitOfWork unitOfWork, IDistributedCache cache)
+        public UrlController(IUrlConverter urlConverter,
+            IUrlRepository urlRepository,
+            IUnitOfWork unitOfWork,
+            IDistributedCache cache,
+            ILogger<UrlController> logger)
         {
             this._urlConverter = urlConverter;
             this._urlRepository = urlRepository;
             this._unitOfWork = unitOfWork;
             this._cache = cache;
+            this._logger = logger;
         }
 
         [HttpPost("shorten")]
@@ -48,9 +54,10 @@ namespace TinyUrl.Controllers
             var urlString = await this._cache.GetStringAsync(shortUrlHash, cancellationToken);
             if (!string.IsNullOrEmpty(urlString))
             {
+                this._logger.LogInformation("Cache hit for {shortUrlHash}", shortUrlHash);
                 return this.Redirect(urlString);
             }
-
+            this._logger.LogInformation("Cache miss for {shortUrlHash}", shortUrlHash);
             var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
             urlString = url?.ToString();
             if (string.IsNullOrEmpty(urlString))
