@@ -11,7 +11,6 @@ try
     Log.Logger = new LoggerConfiguration()
         .ReadFrom.Configuration(configuration)
         .Enrich.FromLogContext()
-        .WriteTo.Console()
         .WriteTo.File("logs.txt")
         .CreateLogger();
     
