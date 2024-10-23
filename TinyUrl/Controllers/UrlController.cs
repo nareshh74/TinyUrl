@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MessagePack;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using TinyUrl.Controllers.Models;
 using TinyUrl.Logic;
@@ -38,7 +39,7 @@ namespace TinyUrl.Controllers
                 string code = this._urlConverter.Encode(request.LongUrl, id);
                 await this._urlRepository.TryUpdateCodeAsync(id, code, cancellationToken);
                 await this._unitOfWork.CommitAsync(cancellationToken);
-                this.WriteToCache(request, cancellationToken, code);
+                this.WriteToCache(request.LongUrl.ToString(), cancellationToken, code);
                 return this.Created("", new ShortUrlResponse { ShortUrl = code });
             }
             catch (Exception)
@@ -48,13 +49,14 @@ namespace TinyUrl.Controllers
             }
         }
 
-        private void WriteToCache(LongUrlRequest request, CancellationToken cancellationToken, string code)
+        private void WriteToCache(string longUrl, CancellationToken cancellationToken, string code)
         {
             Task.Run
             (
                 async () =>
                 {
-                    await this._cache.SetStringAsync(code, request.LongUrl.ToString(), new DistributedCacheEntryOptions(), cancellationToken);
+                    var data = MessagePackSerializer.Serialize(longUrl);
+                    await this._cache.SetAsync(code, data, new DistributedCacheEntryOptions(), cancellationToken);
                 }
                 , cancellationToken
             );
@@ -63,20 +65,22 @@ namespace TinyUrl.Controllers
         [HttpGet("{shortUrlHash}")]
         public async Task<IActionResult> RedirectToLongUrl(string shortUrlHash, CancellationToken cancellationToken)
         {
-            var urlString = await this._cache.GetStringAsync(shortUrlHash, cancellationToken);
-            if (!string.IsNullOrEmpty(urlString))
+            var data = await this._cache.GetAsync(shortUrlHash, cancellationToken);
+            if (data?.Length > 0)
             {
+                using var stream = new MemoryStream(data);
+                var cachedUrl = await MessagePackSerializer.DeserializeAsync<string>(stream, options:null, cancellationToken);
                 this._logger.LogInformation("Cache hit for {shortUrlHash}", shortUrlHash);
-                return this.Redirect(urlString);
+                return this.Redirect(cachedUrl);
             }
             this._logger.LogInformation("Cache miss for {shortUrlHash}", shortUrlHash);
             var url = await this._urlRepository.TryGetUrlByCodeAsync(shortUrlHash, cancellationToken);
-            urlString = url?.ToString();
+            var urlString = url?.ToString();
             if (string.IsNullOrEmpty(urlString))
             {
                 return this.NotFound();
             }
-            await this._cache.SetStringAsync(shortUrlHash, urlString, new DistributedCacheEntryOptions(), cancellationToken);
+            this.WriteToCache(urlString, cancellationToken, shortUrlHash);
             return this.Redirect(urlString);
         }
     }
